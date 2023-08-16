@@ -1,5 +1,6 @@
 local M = {}
 
+
 function M.setup(config)
   local configs = require("repolink.config")
   local api = require("repolink.api")
@@ -25,7 +26,7 @@ function M.setup(config)
       end_line = args.line2,
     })
     if url then
-      vim.notify(url)
+      vim.notify(url, "info", { title = "RepoLink" })
     end
   end, {
     nargs = "*",
