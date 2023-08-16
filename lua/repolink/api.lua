@@ -137,12 +137,11 @@ function M.create_link(opts)
   -- }
 
   if not vim.fn.executable("git") then
-    vim.api.nvim_err_writeln("git is not installed")
-    return
+    return nil, "git is not installed"
   end
 
   if not opts.path then
-    return
+    return nil, "Buffer is not backed by any known file"
   end
 
   local start_line = opts.start_line
@@ -167,13 +166,11 @@ function M.create_link(opts)
   if not vim.wait(config.c.timeout, function()
     return env.error or vim.tbl_count(env) == 6
   end, 20) then
-    vim.api.nvim_err_writeln("Cannot make it in time")
-    return
+    return nil, "Task takes too much time"
   end
 
   if env.error then
-    vim.api.nvim_err_writeln(env.error)
-    return
+    return nil, env.error
   end
 
   local builder = config.c.url_builders[env.host]
@@ -181,7 +178,7 @@ function M.create_link(opts)
     return builder(env)
   end
 
-  vim.api.nvim_err_writeln("Cannot find out builder for " .. env.host)
+  return nil, "Do not know how to build URL for " .. env.host
 end
 
 

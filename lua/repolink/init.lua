@@ -18,14 +18,16 @@ function M.setup(config)
   }, config or {})
 
   vim.api.nvim_create_user_command("RepoLink", function(args)
-    local url = api.create_link({
+    local url, error = api.create_link({
       branch = args.fargs[1] or ".",
       remote = args.fargs[2],
       path = vim.uv.fs_realpath(vim.api.nvim_buf_get_name(0)),
       start_line = args.line1,
       end_line = args.line2,
     })
-    if url then
+    if error then
+      vim.notify(error, "error", { title = "RepoLink" })
+    elseif url then
       vim.notify(url, "info", { title = "RepoLink" })
     end
   end, {
@@ -33,6 +35,7 @@ function M.setup(config)
     range = true,
   })
 end
+
 
 return setmetatable(M, {
   __index = function(_, name)
