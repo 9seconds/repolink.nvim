@@ -1,6 +1,6 @@
-local config = require("repolink.config")
-
-local M = {}
+local M = {
+  c = {}
+}
 
 local function git(cmd)
   local args = { "-P" }
@@ -59,7 +59,7 @@ end)()
 local function collect_git_data_commit_hash(env)
   local args
 
-  if config.c.use_full_commit_hash then
+  if M.c.use_full_commit_hash then
     args = { "rev-parse", "HEAD" }
   else
     args = { "rev-parse", "--short", "HEAD" }
@@ -89,8 +89,8 @@ local function collect_git_data_remote(env, remote)
     "^https?://([^/]+)/([^/]+)/(.+)%.git$",
   }
 
-  if config.c.custom_url_parser then
-    local host, data = config.c.custom_url_parser(remote_url)
+  if M.c.custom_url_parser then
+    local host, data = M.c.custom_url_parser(remote_url)
 
     env.host = host
     env.host_data = data
@@ -156,7 +156,7 @@ function M.create_link(opts)
   collect_git_data_remote(env, opts.remote)
   collect_git_data_path(env, opts.path)
 
-  if not vim.wait(config.c.timeout, function()
+  if not vim.wait(M.c.timeout, function()
     return env.error or vim.tbl_count(env) == 6
   end, 20) then
     return nil, "Task takes too much time"
@@ -166,7 +166,7 @@ function M.create_link(opts)
     return nil, env.error
   end
 
-  local builder = config.c.url_builders[env.host]
+  local builder = M.c.url_builders[env.host]
   if builder then
     return builder(env)
   end

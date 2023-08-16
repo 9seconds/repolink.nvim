@@ -1,10 +1,9 @@
 local M = {}
 
 function M.setup(config)
-  local configs = require("repolink.config")
   local api = require("repolink.api")
 
-  configs.c = vim.tbl_deep_extend("force", {
+  api.c = vim.tbl_deep_extend("force", {
     use_full_commit_hash = false,
     custom_url_parser = nil,
     timeout = 5000,
@@ -39,7 +38,7 @@ return setmetatable(M, {
   __index = function(_, name)
     local api = require("repolink.api")
 
-    if api[name] then
+    if api[name] and name ~= "c" then
       return api[name]
     end
   end,
