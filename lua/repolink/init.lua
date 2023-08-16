@@ -1,6 +1,5 @@
 local M = {}
 
-
 function M.setup(config)
   local configs = require("repolink.config")
   local api = require("repolink.api")
@@ -35,7 +34,6 @@ function M.setup(config)
     range = true,
   })
 end
-
 
 return setmetatable(M, {
   __index = function(_, name)

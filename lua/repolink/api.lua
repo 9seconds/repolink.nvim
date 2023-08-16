@@ -2,7 +2,6 @@ local config = require("repolink.config")
 
 local M = {}
 
-
 local function git(cmd)
   local args = { "-P" }
 
@@ -18,7 +17,6 @@ local function git(cmd)
   })
 end
 
-
 local get_git_root = (function()
   local cache = {}
 
@@ -32,7 +30,6 @@ local get_git_root = (function()
     return cache[key]
   end
 end)()
-
 
 local get_remote_url = (function()
   local cache = {}
@@ -59,7 +56,6 @@ local get_remote_url = (function()
   end
 end)()
 
-
 local function collect_git_data_commit_hash(env)
   local args
 
@@ -80,7 +76,6 @@ local function collect_git_data_commit_hash(env)
 
   commit_job:start()
 end
-
 
 local function collect_git_data_remote(env, remote)
   local remote_url = get_remote_url(remote)
@@ -121,11 +116,9 @@ local function collect_git_data_remote(env, remote)
   env.error = "Cannot parse remote URL"
 end
 
-
 local function collect_git_data_path(env, path)
   env.path = string.sub(path, 2 + #get_git_root())
 end
-
 
 function M.create_link(opts)
   -- opts: {
@@ -181,7 +174,6 @@ function M.create_link(opts)
   return nil, "Do not know how to build URL for " .. env.host
 end
 
-
 function M.url_builder_for_github(host)
   return function(args)
     local anchor = "L" .. tostring(args.start_line)
@@ -199,7 +191,6 @@ function M.url_builder_for_github(host)
     )
   end
 end
-
 
 function M.url_builder_for_bitbucket(host)
   return function(args)
@@ -219,7 +210,6 @@ function M.url_builder_for_bitbucket(host)
   end
 end
 
-
 function M.url_builder_for_gitlab(host)
   return function(args)
     local anchor = "L" .. tostring(args.start_line)
@@ -237,7 +227,6 @@ function M.url_builder_for_gitlab(host)
     )
   end
 end
-
 
 function M.url_builder_for_sourcehut(host)
   return function(args)
@@ -257,7 +246,6 @@ function M.url_builder_for_sourcehut(host)
   end
 end
 
-
 function M.url_builder_for_gitea(host)
   return function(args)
     local anchor = "L" .. tostring(args.start_line)
@@ -276,6 +264,5 @@ function M.url_builder_for_gitea(host)
     )
   end
 end
-
 
 return M
