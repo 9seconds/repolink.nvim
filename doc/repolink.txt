@@ -252,11 +252,11 @@ Now `args`: >lua
     end_line = 10,
   }
 
-`repolink.url_builder_for_github(host)`   *repolink-api-url_builder_for_github*
+`repolink.url_builder_for_github(host)`       *repolink-api-url_builder_for_github*
 `repolink.url_builder_for_bitbucket(host)` *repolink-api-url_builder_for_bitbucket*
-`repolink.url_builder_for_gitlab(host)`   *repolink-api-url_builder_for_gitlab*
+`repolink.url_builder_for_gitlab(host)`       *repolink-api-url_builder_for_gitlab*
 `repolink.url_builder_for_sourcehut(host)` *repolink-api-url_builder_for_sourcehut*
-`repolink.url_builder_for_gitea(host)`     *repolink-api-url_builder_for_gitea*
+`repolink.url_builder_for_gitea(host)`         *repolink-api-url_builder_for_gitea*
 
 This set of functions helps to build an URL builder for various services.
 They are not real builders, they are factories, so they return a
