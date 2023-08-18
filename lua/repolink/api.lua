@@ -56,7 +56,12 @@ local get_remote_url = (function()
   end
 end)()
 
-local function collect_git_data_commit_hash(env)
+local function collect_git_data_commit_hash(env, branch)
+  if branch then
+    env.commit_hash = branch
+    return
+  end
+
   local args
 
   if M.c.use_full_commit_hash then
@@ -152,7 +157,7 @@ function M.create_link(opts)
     -- host_data = {user, project}
     -- path = "..."
   }
-  collect_git_data_commit_hash(env)
+  collect_git_data_commit_hash(env, opts.branch)
   collect_git_data_remote(env, opts.remote)
   collect_git_data_path(env, opts.path)
 

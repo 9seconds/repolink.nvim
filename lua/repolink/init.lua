@@ -16,8 +16,14 @@ function M.setup(config)
   }, config or {})
 
   vim.api.nvim_create_user_command("RepoLink", function(args)
+    local branch = args.fargs[1] or "."
+
+    if branch == "." then
+      branch = nil
+    end
+
     local url, error = api.create_link({
-      branch = args.fargs[1] or ".",
+      branch = branch,
       remote = args.fargs[2],
       path = vim.uv.fs_realpath(vim.api.nvim_buf_get_name(0)),
       start_line = args.line1,
