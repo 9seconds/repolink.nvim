@@ -9,7 +9,9 @@ function M.setup(config)
     timeout = 5000,
     url_builders = {
       ["github.com"] = api.url_builder_for_github("https://github.com"),
-      ["bitbucket.org"] = api.url_builder_for_bitbucket("https://bitbucket.org"),
+      ["bitbucket.org"] = api.url_builder_for_bitbucket(
+        "https://bitbucket.org"
+      ),
       ["gitlab.com"] = api.url_builder_for_gitlab("https://gitlab.com"),
       ["git.sr.ht"] = api.url_builder_for_sourcehut("https://git.sr.ht"),
     },
