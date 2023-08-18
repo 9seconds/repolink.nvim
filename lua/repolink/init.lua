@@ -1,5 +1,11 @@
 local M = {}
 
+-- neovim 0.10 renames vim.loop to vim.uv
+local uv = vim.uv
+if not uv then
+  uv = vim.loop
+end
+
 function M.setup(config)
   local api = require("repolink.api")
 
@@ -27,7 +33,7 @@ function M.setup(config)
     local url, error = api.create_link({
       branch = branch,
       remote = args.fargs[2],
-      path = vim.uv.fs_realpath(vim.api.nvim_buf_get_name(0)),
+      path = uv.fs_realpath(vim.api.nvim_buf_get_name(0)),
       start_line = args.line1,
       end_line = args.line2,
     })

@@ -2,6 +2,12 @@ local M = {
   c = {},
 }
 
+-- neovim 0.10 renames vim.loop to vim.uv
+local uv = vim.uv
+if not uv then
+  uv = vim.loop
+end
+
 local function git(cmd)
   local args = { "-P" }
 
@@ -11,7 +17,7 @@ local function git(cmd)
 
   return require("plenary.job"):new({
     command = "git",
-    cwd = vim.loop.cwd(),
+    cwd = uv.cwd(),
     args = args,
     enable_recording = true,
   })
@@ -21,7 +27,7 @@ local get_git_root = (function()
   local cache = {}
 
   return function()
-    local key = vim.loop.cwd()
+    local key = uv.cwd()
 
     if not cache[key] then
       cache[key] = git({ "rev-parse", "--show-toplevel" }):sync()[1]
