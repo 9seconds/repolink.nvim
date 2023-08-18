@@ -11,6 +11,7 @@ the `:RepoLink` command and in a few moments vim popups a notification with a
 URL that you can immediately share (something like
 `https://github.com/COMPANY/PROJ/blob/1231231/src/mymodule/cache.py#L100-L105`)
 
+![Screenshot](pics/screenshot.png)
 
 ## Installation
 
