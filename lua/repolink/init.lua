@@ -32,7 +32,8 @@ function M.setup(config)
     if error then
       vim.notify(error, "error", { title = "RepoLink" })
     elseif url then
-      vim.notify(url, "info", { title = "RepoLink" })
+      -- let's add a small space to have a better copypasteability
+      vim.notify(url .. " ", "info", { title = "RepoLink" })
     end
   end, {
     nargs = "*",
