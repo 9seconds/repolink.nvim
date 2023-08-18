@@ -208,6 +208,7 @@ or with Lua: >lua
 
   vim.keymap.set(
     {"n", "v"},
+    "<leader>rl",
     "<cmd>RepoLink<cr>",
     { desc = "Generate HTTP permalink" })
 

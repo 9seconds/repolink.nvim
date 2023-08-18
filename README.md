@@ -192,5 +192,9 @@ vnoremap <leader>r  <cmd>RepoLink<cr>
 or with Lua:
 
 ```lua
-vim.keymap.set({"n", "v"}, "<cmd>RepoLink<cr>", { desc = "Generate HTTP permalink" })
+vim.keymap.set(
+  {"n", "v"},
+  "<leader>rl",
+  "<cmd>RepoLink<cr>",
+  { desc = "Generate HTTP permalink" })
 ```
