@@ -98,6 +98,13 @@ Here is default config:
   --     end
   custom_url_parser = nil,
 
+  -- By default RepoLink just notifies about generated URL but if
+  -- this setting is not nil, then URL could also be copied into
+  -- a given register.
+  --
+  -- If you want to copy it into a register, run RepoLink! (with bang).
+  bang_register = "+",
+
   -- repolink runs Git. Usually, it finishes quite fast but if you have a
   -- slow storage, like NFS, can take some time. This is a timeout
   -- after which repolink fails.
@@ -179,6 +186,13 @@ If you still want to use autodetection, use `.` (dot).
 ```vim
 :RepoLink .
 :RepoLink . notorigin
+```
+
+If you want to copy URL to a register (`+` register by default), use
+`:Repolink!` instead.
+
+```vim
+:RepoLink!
 ```
 
 If you still want to have it mapped to some keys, then it is also possible.

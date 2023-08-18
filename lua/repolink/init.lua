@@ -12,6 +12,7 @@ function M.setup(config)
   api.c = vim.tbl_deep_extend("force", {
     use_full_commit_hash = false,
     custom_url_parser = nil,
+    bang_register = "+",
     timeout = 5000,
     url_builders = {
       ["github.com"] = api.url_builder_for_github("https://github.com"),
@@ -37,13 +38,24 @@ function M.setup(config)
       start_line = args.line1,
       end_line = args.line2,
     })
+
     if error then
       vim.notify(error, "error", { title = "RepoLink" })
-    elseif url then
-      -- let's add a small space to have a better copypasteability
-      vim.notify(url .. " ", "info", { title = "RepoLink" })
+      return
+    end
+
+    if not url then
+      return
+    end
+
+    -- let's add a small space to have a better copypasteability
+    vim.notify(url .. " ", "info", { title = "RepoLink" })
+
+    if args.bang and api.c.bang_register then
+      vim.fn.setreg(api.c.bang_register, url, "c")
     end
   end, {
+    bang = true,
     nargs = "*",
     range = true,
   })
