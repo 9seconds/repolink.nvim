@@ -1,0 +1,276 @@
+*repolink.txt* a plugin to create HTTP permalinks for Git web frontends
+
+
+===============================================================================
+Table of contents                                                *repolink-toc*
+
+1. Intro  ...................................................  |repolink-intro|
+   1.1  Installation  ................................  |repolink-installation|
+   1.2  Configuration  ..............................  |repolink-configuration|
+   1.3  Commands  ........................................  |repolink-commands|
+   1.4  Key mappings  .................................  |repolink-keymappings|
+
+2. API  .......................................................  |repolink-api|
+
+
+===============================================================================
+Intro                                                          *repolink-intro*
+
+Repolink is meant to be a very simple concise plugin that helps you to link a
+file or a line range in a file to some URL that you can use to share with your
+colleagues.
+
+For example, if you have a git repository with a file `src/mymodule/cache.py`
+and you want to show your teammates something that happens in a function `foo`
+between lines 100 and 105, this is what this plugin is meant for. You execute
+the |:RepoLink| command and in a few moments vim popups a notification with a
+URL that you can immediately share (something like
+`https://github.com/COMPANY/PROJ/blob/1231231/src/mymodule/cache.py#L100-L105`)
+
+-------------------------------------------------------------------------------
+Installation                                            *repolink-installation*
+
+You can install this plugin like any other plugin for Neovim. For example:
+
+lazy.nvim ~
+>lua
+    {
+      "9seconds/repolink.nvim",
+      dependencies = {
+        "nvim-lua/plenary.nvim"
+      },
+      cmd = {
+        "RepoLink"
+      },
+
+      opts = {
+        -- your configuration goes here.
+        -- keep empty object if you are fine with defaults
+      },
+    }
+
+packer.nvim ~
+>lua
+  use {
+    "9seconds/repolink.nvim",
+    requires = {
+      "nvim-lua/plenary.nvim"
+    },
+    opt = true,
+    cmd = {
+      "RepoLink"
+    },
+
+    config = function()
+      require("repolink").setup({
+        -- your configuration goes here.
+        -- keep empty object if you are fine with defaults
+      })
+    end
+  }
+
+This will lazily load this plugin when you execute the |:RepoLink| command for
+the first time. If you dislike it or want to use a custom keymapping, you are
+free to do it: please consult the documentation of your package manager.
+
+You also need to have Git installed.
+
+-------------------------------------------------------------------------------
+Configuration                                          *repolink-configuration*
+
+Default configuration is: >lua
+
+  {
+    -- By default, repolink tries to create links with short commits
+    -- like, 42dd21c instead of 42dd21cf54779c9175c4ff7450d91a9ad0387491
+    -- If you like to have full commits, please enable this flag
+    use_full_commit_hash = false,
+
+    -- repolink takes remote URLs from git itself and can parse
+    -- most common ones: from Github, Bitbucket, Sourcehut, Gitlab, Gitea, etc.
+    -- but sometimes you can have a quite weird configuration, made with,
+    -- for example, cgit, so the default one won't work for you.
+    --
+    -- If you provide this custom parser, it should be a function that
+    -- parses a remote URL and returns a hostname and some data blob
+    -- that could be used later, on URL building.
+    --
+    -- host parameter would be used to find out a function that is used
+    -- to convert remote URL and repository data to an HTTP permalink
+    --
+    -- data parameter can be anything but you want to use the default URL
+    -- builders, it should be a table of
+    -- { user = "YOUR USER", project = "PROJECT NAME" }
+    --
+    -- Example of parser for git@github.com:9seconds/repolink.nvim.git URL:
+    --
+    --     function(remote_url)
+    --         local host, user, project = string.match(
+    --             remote_url,
+    --             "^git@([^:]+):([^/]+)/(.+)%.git$")
+    --         if host then
+    --           return host, {
+    --             user = user,
+    --             project = project
+    --           }
+    --         end
+    --     end
+    custom_url_parser = nil,
+
+    -- repolink runs Git. Usually, it finishes quite fast but if you have a
+    -- slow storage, like NFS, can take some time. This is a timeout
+    -- after which repolink fails.
+    timeout = 5000,
+
+    -- a table of builders that maps a hostname to a function that builds URL.
+    -- an example of such function (builder for GitHub):
+    --
+    --     function(args)
+    --       local anchor = "L" .. tostring(args.start_line)
+    --       if args.start_line ~= args.end_line then
+    --         anchor = anchor .. "-L" .. tostring(args.end_line)
+    --       end
+    --
+    --       return string.format(
+    --         "https://github.com/%s/%s/blob/%s/%s#%s",
+    --         args.host_data.user,
+    --         args.host_data.project,
+    --         args.commit_hash,
+    --         args.path,
+    --         anchor
+    --       )
+    --
+    -- args is a table:
+    --
+    --    {
+    --      start_line = 1
+    --      end_line = 2,
+    --      host = "github.com",
+    --      host_data = {
+    --        user = "9seconds",
+    --        project = "repolink.nvim"
+    --      },
+    --      commit_hash = "42dd21c",
+    --      path = "doc/repolink.txt",
+    --    }
+    url_builders = {
+      ["github.com"] = api.url_builder_for_github("https://github.com"),
+      ["bitbucket.org"] = api.url_builder_for_bitbucket("https://bitbucket.org"),
+      ["gitlab.com"] = api.url_builder_for_gitlab("https://gitlab.com"),
+      ["git.sr.ht"] = api.url_builder_for_sourcehut("https://git.sr.ht"),
+    },
+  }
+
+For example, if you want to use long commit hashes, then use >lua
+
+  {
+    use_full_commit_hash = true,
+  }
+
+-------------------------------------------------------------------------------
+Commands                                                    *repolink-commands*
+
+`RepoLink`                                                          *:RepoLink*
+
+Generate a link to a certain line or line range in a file. This works for both
+normal and visual modes, also works with motions. A result is delivered with
+|vim.notify()| so you can either check |:messages| or see a fancy notification
+from https://github.com/rcarriga/nvim-notify
+
+Sometimes you do not want to have a link to a certain commit. In that case
+you can do >vim
+
+  :RepoLink master
+
+This will assume that the commit has is `master`. It won't check anything, just
+trust. If you want to specify a certain remote, then do >vim
+
+  :RepoLink master notorigin
+
+If you still want to use autodetection, use `.` (dot). >vim
+
+  :RepoLink .
+  :RepoLink . notorigin
+
+-------------------------------------------------------------------------------
+Key mappings                                             *repolink-keymappings*
+
+No keymappings are defined on its own. Even as an author of this plugin, I
+still feel that it is too small to have a key mapping. I find that usage of
+|:RepoLink| a bit more ergonimic.
+
+But if you want, this is how you can do it with Vimscript: >vim
+
+  nnoremap <leader>rl <cmd>RepoLink<cr>
+  vnoremap <leader>r  <cmd>RepoLink<cr>
+
+or with Lua: >lua
+
+  vim.keymap.set(
+    {"n", "v"},
+    "<cmd>RepoLink<cr>",
+    { desc = "Generate HTTP permalink" })
+
+
+===============================================================================
+API                                                              *repolink-api*
+
+This plugin provides Lua api only. Next code assumes >lua
+
+  local repolink = require("repolink")
+
+
+`repolink.create_link(args)`                         *repolink-api-create_link*
+
+This function creates a link but does not issue any notification. It returns
+a tuple of `url` and `err`. If `err` is not nil, then some error has
+happened: >lua
+
+  local url, err = repolink.create_link(args)
+  if error then
+    error(err)
+  else url
+    print(url)
+  end
+
+Now `args`: >lua
+
+  {
+    -- which branch/commit to use for link generation. If you want to have
+    -- autodetection, then use nil.
+    branch = nil,
+
+    -- a name of the remote repository to use. Use nil if unknown.
+    remote = "origin",
+
+    -- a full path to a file (absolute).
+    path = "/home/9seconds/projects/repolink.nvim/doc/repolink.txt",
+
+    -- a start and finish lines. If they are the same, then values
+    -- would be collapsed.
+    start_line = 10,
+    end_line = 10,
+  }
+
+`repolink.url_builder_for_github(host)`   *repolink-api-url_builder_for_github*
+`repolink.url_builder_for_bitbucket(host)` *repolink-api-url_builder_for_bitbucket*
+`repolink.url_builder_for_gitlab(host)`   *repolink-api-url_builder_for_gitlab*
+`repolink.url_builder_for_sourcehut(host)` *repolink-api-url_builder_for_sourcehut*
+`repolink.url_builder_for_gitea(host)`     *repolink-api-url_builder_for_gitea*
+
+This set of functions helps to build an URL builder for various services.
+They are not real builders, they are factories, so they return a
+function. This is very useful if you do not use SAAS, but something self-hosted,
+like Gitea or Gitlab. So, if you have a Gitlab hosted in your intranet at
+something like https://gitlab.int.mycompany.com, then all you need to do
+is supply the following configuration to a plugin: >lua
+
+  {
+    url_buidlers = {
+      ["gitlab.int.mycompany.com"] =
+        repolink.url_builder_for_gitlab("https://gitlab.int.mycompany.com")
+    }
+  }
+
+
+vim: ft=help:tw=79
