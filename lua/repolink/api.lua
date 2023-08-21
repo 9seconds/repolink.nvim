@@ -3,10 +3,7 @@ local M = {
 }
 
 -- neovim 0.10 renames vim.loop to vim.uv
-local uv = vim.uv
-if not uv then
-  uv = vim.loop
-end
+local uv = vim.uv or vim.loop
 
 local function git(cmd)
   local args = { "-P" }
@@ -188,6 +185,8 @@ function M.create_link(opts)
 end
 
 function M.url_builder_for_github(host)
+  local url = (host or "https://github.com") .. "/%s/%s/blob/%s/%s#%s"
+
   return function(args)
     local anchor = "L" .. tostring(args.start_line)
     if args.start_line ~= args.end_line then
@@ -195,7 +194,7 @@ function M.url_builder_for_github(host)
     end
 
     return string.format(
-      (host or "https://github.com") .. "/%s/%s/blob/%s/%s#%s",
+      url,
       args.host_data.user,
       args.host_data.project,
       args.commit_hash,
@@ -206,6 +205,8 @@ function M.url_builder_for_github(host)
 end
 
 function M.url_builder_for_bitbucket(host)
+  local url = (host or "https://bitbucket.org") .. "/%s/%s/src/%s/%s#%s"
+
   return function(args)
     local anchor = "lines-" .. tostring(args.start_line)
     if args.start_line ~= args.end_line then
@@ -213,7 +214,7 @@ function M.url_builder_for_bitbucket(host)
     end
 
     return string.format(
-      (host or "https://bitbucket.org") .. "/%s/%s/src/%s/%s#%s",
+      url,
       args.host_data.user,
       args.host_data.project,
       args.commit_hash,
@@ -224,6 +225,8 @@ function M.url_builder_for_bitbucket(host)
 end
 
 function M.url_builder_for_gitlab(host)
+  local url = (host or "https://gitlab.com") .. "/%s/%s/-/blob/%s/%s#%s"
+
   return function(args)
     local anchor = "L" .. tostring(args.start_line)
     if args.start_line ~= args.end_line then
@@ -231,7 +234,7 @@ function M.url_builder_for_gitlab(host)
     end
 
     return string.format(
-      (host or "https://gitlab.com") .. "/%s/%s/-/blob/%s/%s#%s",
+      url,
       args.host_data.user,
       args.host_data.project,
       args.commit_hash,
@@ -242,6 +245,8 @@ function M.url_builder_for_gitlab(host)
 end
 
 function M.url_builder_for_sourcehut(host)
+  local url = (host or "https://git.sr.ht") .. "/%s/%s/tree/%s/item/%s#"
+
   return function(args)
     local anchor = "L" .. tostring(args.start_line)
     if args.start_line ~= args.end_line then
@@ -249,7 +254,7 @@ function M.url_builder_for_sourcehut(host)
     end
 
     return string.format(
-      (host or "https://git.sr.ht") .. "/%s/%s/tree/%s/item/%s#",
+      url,
       args.host_data.user,
       args.host_data.project,
       args.commit_hash,
@@ -260,6 +265,8 @@ function M.url_builder_for_sourcehut(host)
 end
 
 function M.url_builder_for_gitea(host)
+  local url = (host or "https://gitea.com") .. "/%s/%s/src/commit/%s/%s#"
+
   return function(args)
     local anchor = "L" .. tostring(args.start_line)
     if args.start_line ~= args.end_line then
@@ -267,8 +274,7 @@ function M.url_builder_for_gitea(host)
     end
 
     return string.format(
-      -- this works only for branches
-      (host or "https://gitea.com") .. "/%s/%s/src/commit/%s/%s#",
+      url,
       args.host_data.user,
       args.host_data.project,
       args.commit_hash,
