@@ -1,3 +1,6 @@
+local plenary_async = require("plenary.async")
+local plenary_job = require("plenary.job")
+
 local M = {
   c = {},
 }
@@ -12,7 +15,7 @@ local function git(cmd)
     table.insert(args, arg)
   end
 
-  return require("plenary.job"):new({
+  return plenary_job:new({
     command = "git",
     cwd = uv.cwd(),
     args = args,
@@ -20,28 +23,38 @@ local function git(cmd)
   })
 end
 
-local get_git_root = (function()
+local find_git_root = (function()
   local cache = {}
 
-  return function()
+  return plenary_async.wrap(function(callback)
     local key = uv.cwd()
 
-    if not cache[key] then
-      cache[key] = git({ "rev-parse", "--show-toplevel" }):sync()[1]
+    if cache[key] then
+      return callback(cache[key], nil)
     end
 
-    return cache[key]
-  end
+    local job = git({ "rev-parse", "--show-toplevel" })
+
+    job:after_success(function()
+      cache[key] = job:result()[1]
+      callback(cache[key], nil)
+    end)
+    job:after_failure(function()
+      callback(nil, "Cannot find out a root of the repository")
+    end)
+
+    job:sync(M.c.timeout)
+  end, 1)
 end)()
 
-local get_remote_url = (function()
+local find_remote_url = (function()
   local cache = {}
 
-  return function(name)
-    local key = get_git_root() .. "::" .. (name or "")
+  return plenary_async.wrap(function(name, callback)
+    local key = uv.cwd() .. "::" .. (name or "")
 
     if cache[key] then
-      return cache[key]
+      return callback(cache[key], nil)
     end
 
     local args = { "ls-remote", "--get-url" }
@@ -49,20 +62,77 @@ local get_remote_url = (function()
       table.insert(args, name)
     end
 
-    local url = git(args):sync()[1]
+    local job = git(args)
+    job:after_success(function()
+      local url = job:result()[1]
 
-    if url and url ~= name then
-      cache[key] = url
+      if url and url ~= name then
+        cache[key] = url
+        return callback(url, nil)
+      end
 
-      return url
-    end
-  end
+      callback(nil, "Cannot find out remote URL")
+    end)
+    job:after_failure(function()
+      callback(nil, "Cannot find out remote URL")
+    end)
+
+    job:sync(M.c.timeout)
+  end, 2)
 end)()
 
-local function collect_git_data_commit_hash(env, branch)
+local function collect_git_path(send, path)
+  local root, err = find_git_root()
+
+  if err then
+    send({ error = err })
+  else
+    send({ path = string.sub(path, 2 + #root) })
+  end
+end
+
+local function collect_git_remote(send, name)
+  local remote_url, err = find_remote_url(name)
+  if not remote_url then
+    return send({ error = err })
+  end
+
+  local url_patterns = {
+    "^git@([^:]+):([^/]+)/(.+)%.git$",
+    "^https?://([^/]+)/([^/]+)/(.+)%.git$",
+  }
+
+  if M.c.custom_url_parser then
+    local host, host_data, parse_err = M.c.custom_url_parser(remote_url)
+
+    if not parse_err then
+      return send({
+        host = host,
+        host_data = host_data,
+      })
+    end
+  end
+
+  for _, pattern in pairs(url_patterns) do
+    local host, user, project = string.match(remote_url, pattern)
+
+    if host then
+      return send({
+        host = host,
+        host_data = {
+          user = user,
+          project = project,
+        },
+      })
+    end
+  end
+
+  send({ error = "Cannot parse remote URL" })
+end
+
+local function collect_git_commit_hash(send, branch)
   if branch then
-    env.commit_hash = branch
-    return
+    return send({ commit_hash = branch })
   end
 
   local args
@@ -73,59 +143,16 @@ local function collect_git_data_commit_hash(env, branch)
     args = { "rev-parse", "--short", "HEAD" }
   end
 
-  local commit_job = git(args)
+  local job = git(args)
 
-  commit_job:after_success(function(j)
-    env.commit_hash = j:result()[1]
+  job:after_success(function()
+    send({ commit_hash = job:result()[1] })
   end)
-  commit_job:after_failure(function()
-    env.error = "Cannot find a commit for a current repository head"
+  job:after_failure(function()
+    send({ error = "Cannot find a commit for a current repository head" })
   end)
 
-  commit_job:start()
-end
-
-local function collect_git_data_remote(env, remote)
-  local remote_url = get_remote_url(remote)
-  if not remote_url then
-    env.error = "Cannot resolve a remote URL"
-    return
-  end
-
-  local url_patterns = {
-    "^git@([^:]+):([^/]+)/(.+)%.git$",
-    "^https?://([^/]+)/([^/]+)/(.+)%.git$",
-  }
-
-  if M.c.custom_url_parser then
-    local host, data = M.c.custom_url_parser(remote_url)
-
-    env.host = host
-    env.host_data = data
-  end
-
-  if env.host then
-    return
-  end
-
-  for _, pattern in pairs(url_patterns) do
-    local host, user, project = string.match(remote_url, pattern)
-
-    if host then
-      env.host = host
-      env.host_data = {
-        user = user,
-        project = project,
-      }
-      return
-    end
-  end
-
-  env.error = "Cannot parse remote URL"
-end
-
-local function collect_git_data_path(env, path)
-  env.path = string.sub(path, 2 + #get_git_root())
+  job:sync(M.c.timeout)
 end
 
 function M.create_link(opts)
@@ -160,17 +187,25 @@ function M.create_link(opts)
     -- host_data = {user, project}
     -- path = "..."
   }
-  collect_git_data_commit_hash(env, opts.branch)
-  collect_git_data_remote(env, opts.remote)
-  collect_git_data_path(env, opts.path)
+  local sender, receiver = plenary_async.control.channel.mpsc()
 
-  if
-    not vim.wait(M.c.timeout, function()
-      return env.error or vim.tbl_count(env) == 6
-    end, 20)
-  then
-    return nil, "Task takes too much time"
-  end
+  plenary_async.run(function()
+    collect_git_path(sender.send, opts.path)
+  end)
+  plenary_async.run(function()
+    collect_git_remote(sender.send, opts.remote)
+  end)
+  plenary_async.run(function()
+    collect_git_commit_hash(sender.send, opts.branch)
+  end)
+
+  plenary_async.void(function()
+    while not env.error and vim.tbl_count(env) < 6 do
+      for k, v in pairs(receiver.recv()) do
+        env[k] = v
+      end
+    end
+  end)()
 
   if env.error then
     return nil, env.error

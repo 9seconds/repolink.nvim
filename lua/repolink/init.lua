@@ -60,8 +60,6 @@ end
 
 return setmetatable(M, {
   __index = function(_, name)
-    local api = require("repolink.api")
-
     if api[name] and name ~= "c" then
       return api[name]
     end

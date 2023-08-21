@@ -92,8 +92,11 @@ Default configuration is: >lua
     -- for example, cgit, so the default one won't work for you.
     --
     -- If you provide this custom parser, it should be a function that
-    -- parses a remote URL and returns a hostname and some data blob
-    -- that could be used later, on URL building.
+    -- parses a remote URL and returns a hostname, some data blob
+    -- that could be used later, on URL building, and possible error.
+    --
+    -- If url is parsed with error, then fallback to a default behaviour
+    -- will be performed.
     --
     -- host parameter would be used to find out a function that is used
     -- to convert remote URL and repository data to an HTTP permalink
@@ -112,8 +115,10 @@ Default configuration is: >lua
     --           return host, {
     --             user = user,
     --             project = project
-    --           }
+    --           }, nil
     --         end
+    --
+    --         return nil, nil, "Unknown URL"
     --     end
     custom_url_parser = nil,
 
