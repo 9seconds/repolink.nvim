@@ -280,7 +280,7 @@ function M.url_builder_for_gitlab(host)
 end
 
 function M.url_builder_for_sourcehut(host)
-  local url = (host or "https://git.sr.ht") .. "/%s/%s/tree/%s/item/%s#"
+  local url = (host or "https://git.sr.ht") .. "/%s/%s/tree/%s/item/%s#%s"
 
   return function(args)
     local anchor = "L" .. tostring(args.start_line)
