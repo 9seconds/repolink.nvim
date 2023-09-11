@@ -300,7 +300,7 @@ function M.url_builder_for_sourcehut(host)
 end
 
 function M.url_builder_for_gitea(host)
-  local url = (host or "https://gitea.com") .. "/%s/%s/src/commit/%s/%s#"
+  local url = (host or "https://gitea.com") .. "/%s/%s/src/commit/%s/%s#%s"
 
   return function(args)
     local anchor = "L" .. tostring(args.start_line)
