@@ -98,8 +98,8 @@ local function collect_git_remote(send, name)
   end
 
   local url_patterns = {
-    "^git@([^:]+):([^/]+)/(.+)%.git$",
-    "^https?://([^/]+)/([^/]+)/(.+)%.git$",
+    "^git@([^:]+):([^/]+)/(.+)$",
+    "^https?://([^/]+)/([^/]+)/(.+)$",
   }
 
   if M.c.custom_url_parser then
@@ -114,14 +114,15 @@ local function collect_git_remote(send, name)
   end
 
   for _, pattern in pairs(url_patterns) do
-    local host, user, project = string.match(remote_url, pattern)
+    local host, user, project_dot_git = string.match(remote_url, pattern)
 
     if host then
+      local project = string.match(project_dot_git, "^(.+)(%.git)$")
       return send({
         host = host,
         host_data = {
           user = user,
-          project = project,
+          project = project or project_dot_git,
         },
       })
     end
